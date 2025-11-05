@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Advanced Pizza Delivery App</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+      margin: 0;
+    }
+    .container {
+      max-width: 450px;
+      margin: 45px auto;
+      background: #fff;
+      padding: 32px;
+      border-radius: 18px;
+      box-shadow: 0 4px 25px #fcb69f99;
+      position: relative;
+    }
+    h2 {
+      text-align: center;
+      color: #eb2f06;
+      margin-bottom: 2px;
+      font-size: 2em;
+    }
+    .card-img {
+      width: 100px;
+      border-radius: 15px;
+      box-shadow: 0 2px 7px #eb2f0685;
+      margin-right: 13px;
+      margin-bottom: 12px;
+      float: left;
+      transition: 0.3s;
+    }
+    .subtitle { color: #ed760e; font-size: 1.1em; margin-bottom: 8px;}
+    .details { margin-bottom: 10px; }
+    select, input[type="text"], input[type="number"], input[type="tel"], textarea {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #f7c59f;
+      margin-bottom: 13px;
+      font-size: 1em;
+      background: #fff8ef;
+    }
+    label {
+      font-weight: bold;
+      color: #ea5455;
+      margin-top: 6px;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .toppings, .custom-topping-group {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .toppings input[type="checkbox"] { accent-color: #eb2f06;}
+    .custom-topping-group input[type="text"] { width: 50%; }
+    button {
+      padding: 12px 0;
+      width: 100%;
+      background: linear-gradient(90deg,#eb2f06 60%, #ea5455 100%);
+      color: #fff;
+      border:none;
+      border-radius: 7px;
+      font-size: 1.1em;
+      cursor: pointer;
+      margin-top: 8px;
+      box-shadow: 0 2px 14px #eb2f0640;
+      transition: background 0.25s;
+    }
+    button:hover {
+      background: linear-gradient(90deg, #ea5455 40%, #ffd6e0 100%);
+      color: #eb2f06;
+    }
+    #result {
+      margin: 18px 0 0 0;
+      text-align: left;
+      color: #222;
+      font-weight: bold;
+      background: #fff8ef;
+      border-radius: 9px;
+      padding: 15px;
+      box-shadow: 0 1px 7px #fcb69f50;
+      font-size: 1.1em;
+      min-height: 35px;
+    }
+    .delivery-time { color: #3bb44a;}
+    #error { color: #d7263d; font-weight: bold; margin-bottom: 10px;}
+    #history {
+      background: #fff3e0;
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 0.96em;
+      margin: 22px 0 12px;
+      box-shadow: 0 2px 9px #fcb69f33;
+    }
+    #orderModal {
+      display: none;
+      position: fixed;
+      z-index: 5;
+      left: 0;
+      top: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(40,40,40,0.22);
+      align-items: center;
+      justify-content: center;
+    }
+    #orderModalContent {
+      background: #fff;
+      padding: 22px 17px;
+      border-radius: 13px;
+      box-shadow: 0 4px 22px #eb2f065a;
+      max-width: 360px;
+      margin: auto;
+      text-align: left;
+    }
+    @media (max-width:520px){
+      .container {max-width:98vw;}
+      .card-img { width:66vw; }
+      #history { font-size:0.88em; }
+    }
+  </style>
+</head>
+<body>
+  <div id="orderModal" aria-modal="true">
+    <div id="orderModalContent">
+      <h3 style="color:#eb2f06;">Confirm Your Order</h3>
+      <div id="modalSummary"></div>
+      <button onclick="finishOrder()" aria-label="Confirm order">Confirm Order</button>
+      <button onclick="hideModal()" style="background:#fff; color:#eb2f06; border:1px solid #eb2f06; margin-top:8px;" aria-label="Edit order">Edit Order</button>
+    </div>
+  </div>
+  <div class="container" aria-label="pizza order form">
+    <img class="card-img" id="pizzaImage"
+         src="https://cdn.pixabay.com/photo/2017/12/09/08/18/pizza-3007395_1280.jpg" alt="Pizza Image">
+    <h2>Order Your Pizza</h2>
+    <div style="clear:both"></div>
+    <div class="subtitle">Fast. Tasty. Fresh. Delivered!</div>
+    <div id="history"></div>
+    <form id="pizzaForm" autocomplete="off" aria-label="Order pizza form">
+      <span id="error" role="alert"></span>
+      <div class="details">
+        <label>Name:</label>
+        <input type="text" id="name" required aria-required="true"/>
+        <label>Phone:</label>
+        <input type="tel" id="phone" pattern="[0-9]{10}" required maxlength="10"
+               placeholder="10 digit number" aria-required="true"/>
+        <label>Delivery Address:</label>
+        <textarea id="address" rows="2" required placeholder="Type full address here" aria-required="true"></textarea>
+      </div>
+      <label>Pizza Size:</label>
+      <select id="size" required>
+        <option value="200" data-img="https://cdn.pixabay.com/photo/2017/12/09/08/18/pizza-3007395_1280.jpg">Small (₹200)</option>
+        <option value="300" data-img="https://cdn.pixabay.com/photo/2015/04/08/13/13/pizza-712667_960_720.jpg">Medium (₹300)</option>
+        <option value="400" data-img="https://cdn.pixabay.com/photo/2016/03/05/19/02/homemade-1238946_960_720.jpg">Large (₹400)</option>
+      </select>
+      <label>Toppings (₹50 each):</label>
+      <div class="toppings" id="toppingList">
+        <label><input type="checkbox" value="Cheese" /> Cheese</label>
+        <label><input type="checkbox" value="Mushroom" /> Mushroom</label>
+        <label><input type="checkbox" value="Paneer" /> Paneer</label>
+        <label><input type="checkbox" value="Olives" /> Olives</label>
+        <label><input type="checkbox" value="Jalapeno" /> Jalapeno</label>
+      </div>
+      <div class="custom-topping-group">
+        <input type="text" id="customTopping" placeholder="Add custom topping">
+        <button type="button" onclick="addCustomTopping()" style="width:45%;">Add</button>
+      </div>
+      <label>Quantity:</label>
+      <input type="number" id="qty" min="1" value="1" required />
+      <div><b>Current Total: <span id="liveTotal">₹200</span></b></div>
+      <button type="submit" aria-label="Place order">Place Order</button>
+      <button type="reset" style="background:#fff; color:#eb2f06; border:1px solid #eb2f06; margin-top:8px;" aria-label="Reset form">Order Another</button>
+    </form>
+    <div id="result"></div>
+  </div>
+  <script>
+    // Accessibility ARIA improvements
+    document.getElementById('pizzaForm').setAttribute('aria-label', 'Order pizza form');
+    // Dynamic pizza image based on size
+    document.getElementById('size').onchange = function() {
+      document.getElementById('pizzaImage').src =
+        this.selectedOptions[0].getAttribute('data-img');
+      updateTotal();
+    };
+    // Dynamic live price calculation & toppings input
+    document.getElementById('qty').oninput = updateTotal;
+    document.querySelectorAll('.toppings input').forEach(el => el.onchange = updateTotal);
+
+    function addCustomTopping(){
+      var val = document.getElementById('customTopping').value.trim();
+      if(val){
+        var label = document.createElement('label');
+        label.innerHTML = `<input type="checkbox" value="${val}" checked/> ${val}`;
+        document.getElementById('toppingList').appendChild(label);
+        label.querySelector('input').onchange = updateTotal;
+        document.getElementById('customTopping').value = '';
+        updateTotal();
+      }
+    }
+    function updateTotal(){
+      var sizePrice = Number(document.getElementById("size").value);
+      var toppings = document.querySelectorAll('#toppingList input[type="checkbox"]:checked');
+      var toppingsPrice = toppings.length * 50;
+      var qty = Math.max(1, Number(document.getElementById("qty").value));
+      document.getElementById('liveTotal').textContent = "₹"+(qty * (sizePrice + toppingsPrice));
+    }
+    // Estimated delivery time generator
+    function getDeliveryTime(){
+      var min = 21, max = 40;
+      return Math.floor(Math.random()* (max - min + 1))+min+" minutes";
+    }
+    // Order history loads from localStorage
+    function loadHistory(){
+      var history = JSON.parse(localStorage.getItem('pizzaOrders')||'[]');
+      if(history.length===0){
+        document.getElementById('history').innerHTML = '';
+        return;
+      }
+      var html = "<b>Last Order History</b><ul>";
+      history.slice(-3).reverse().forEach(o=>{
+        html += `<li>${o.date}: ${o.name}, Pizza: ${o.size}, Qty: ${o.qty}, ₹${o.total}</li>`;
+      });
+      html += "</ul>";
+      document.getElementById('history').innerHTML = html;
+    }
+    loadHistory();
+
+    document.getElementById("pizzaForm").onsubmit = function(e) {
+      e.preventDefault();
+      // Validation & error handling
+      var name = document.getElementById("name").value.trim();
+      var phone = document.getElementById("phone").value.trim();
+      var address = document.getElementById("address").value.trim();
+      var sizePrice = Number(document.getElementById("size").value);
+      var qty = Math.max(1, Number(document.getElementById("qty").value));
+      var toppings = document.querySelectorAll('#toppingList input[type="checkbox"]:checked');
+      var toppingNames = [];
+      toppings.forEach(function(t){ toppingNames.push(t.value); });
+      var toppingsPrice = toppings.length * 50;
+      var total = qty * (sizePrice + toppingsPrice);
+
+      var error="";
+      if(name.length<2) error+="Name must be at least 2 characters.<br>";
+      if(phone.length!==10 || !/^\d{10}$/.test(phone)) error+="Phone must be 10 digits.<br>";
+      if(address.length<5) error+="Address required.<br>";
+      if(qty<1) error+="Quantity must be at least 1.<br>";
+
+      document.getElementById('error').innerHTML = error;
+      if(error) return;
+
+      // Show confirmation modal
+      var summary = `
+        <b>Name:</b> ${name}<br>
+        <b>Phone:</b> ${phone}<br>
+        <b>Delivery Address:</b> ${address}<br>
+        <b>Pizza:</b> ${document.getElementById("size").selectedOptions[0].text}<br>
+        <b>Qty:</b> ${qty}<br>
+        <b>Toppings:</b> ${toppingNames.length ? toppingNames.join(", ") : "None"}<br>
+        <b>Subtotal:</b> ₹${qty} x ₹${(sizePrice + toppingsPrice)} = <span style="color:green">₹${total}</span><br>
+        <span class='delivery-time'><b>Estimated Delivery:</b> ${getDeliveryTime()}</span>
+      `;
+      document.getElementById('modalSummary').innerHTML = summary;
+      document.getElementById('orderModal').style.display = 'flex';
+
+      // Store pending order metadata (used on confirmation)
+      window.pendingOrder = {
+        name, phone, address,
+        size: document.getElementById("size").selectedOptions[0].text,
+        toppingNames,
+        qty, total,
+        date: new Date().toLocaleString()
+      };
+    };
+
+    function hideModal(){
+      document.getElementById('orderModal').style.display = 'none';
+    }
+    function finishOrder(){
+      document.getElementById('orderModal').style.display = 'none';
+      var order = window.pendingOrder;
+      document.getElementById('result').innerHTML = `
+        <span style="color:#eb2f06;">Order Summary</span><br>
+        <b>Name:</b> ${order.name}<br>
+        <b>Phone:</b> ${order.phone}<br>
+        <b>Delivery Address:</b> ${order.address}<br>
+        <b>Pizza:</b> ${order.size}<br>
+        <b>Qty:</b> ${order.qty}<br>
+        <b>Toppings:</b> ${order.toppingNames.length ? order.toppingNames.join(", ") : "None"}<br>
+        <b>Total:</b> <span style="color:green">₹${order.total}</span><br>
+        <span class='delivery-time'><b>Delivered in:</b> ${getDeliveryTime()}</span>
+        <div id="confetti" style="font-size:2em; margin:7px 0;">🎉🍕</div>
+        <hr>
+        <span style="font-size:1em;color:#ea5455;">Thank you for working with Tushar Sharma, this is my pizza deli  .</span>
+      `;
+      // Save to localStorage order history
+      var history = JSON.parse(localStorage.getItem('pizzaOrders')||'[]');
+      history.push(order);
+      localStorage.setItem('pizzaOrders', JSON.stringify(history));
+      loadHistory();
+      // Fun animation (confetti effect here)
+      setTimeout(()=>{document.getElementById('confetti').textContent="";},1800);
+    }
+    document.getElementById("pizzaForm").onreset = function(){
+      document.getElementById('result').textContent = '';
+      document.getElementById('error').textContent = '';
+      updateTotal();
+    };
+    // Initial total on load
+    updateTotal();
+  </script>
+</body>
+</html>
